@@ -94,4 +94,10 @@ public class BeerServiceImpl implements BeerService {
         return this.beerRepository.findByBeerStyle(beerStyle)
                 .map(this.beerMapper::beerToBeerDTO);
     }
+
+    @Override
+    public Flux<BeerDTO> listBeers() {
+        return this.beerRepository.findAll()
+                .map(this.beerMapper::beerToBeerDTO);
+    }
 }
