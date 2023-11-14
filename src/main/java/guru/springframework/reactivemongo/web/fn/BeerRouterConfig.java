@@ -21,6 +21,10 @@ public class BeerRouterConfig {
     @Bean
     public RouterFunction<ServerResponse> beerRoutes() {
         return route()
+                .DELETE(BEER_PATH_ID, accept(APPLICATION_JSON), this.handler::deleteBeerById)
+                .PATCH(BEER_PATH_ID, accept(APPLICATION_JSON), this.handler::patchBeerById)
+                .PUT(BEER_PATH_ID, accept(APPLICATION_JSON), this.handler::updateBeerById)
+                .POST(BEER_PATH, accept(APPLICATION_JSON),this.handler::createNewBeer)
                 .GET(BEER_PATH_ID, accept(APPLICATION_JSON),this.handler::getBeerById)
                 .GET(BEER_PATH, accept(APPLICATION_JSON),this.handler::listBeers)
                 .build();

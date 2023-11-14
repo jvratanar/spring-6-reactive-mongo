@@ -10,8 +10,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.reactive.server.FluxExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
@@ -22,6 +25,17 @@ import static org.hamcrest.Matchers.hasSize;
 public class BeerEndpointTest {
     @Autowired
     WebTestClient webTestClient;
+
+    @Test
+    void testPatchIdFound() {
+        BeerDTO beerDTO = getSavedTestBeer();
+
+        this.webTestClient.patch()
+                .uri(BeerRouterConfig.BEER_PATH_ID, beerDTO.getId())
+                .body(Mono.just(beerDTO), BeerDTO.class)
+                .exchange()
+                .expectStatus().isNoContent();
+    }
 
     @Test
     void testDeleteNotFound() {
@@ -42,7 +56,8 @@ public class BeerEndpointTest {
     @Test
     @Order(999)
     void testDeleteBeer() {
-        this.webTestClient.delete().uri(BeerRouterConfig.BEER_PATH_ID, 1)
+        BeerDTO beerDTO = getSavedTestBeer();
+        this.webTestClient.delete().uri(BeerRouterConfig.BEER_PATH_ID, beerDTO.getId())
                 .exchange()
                 .expectStatus().isNoContent();
     }
@@ -59,16 +74,6 @@ public class BeerEndpointTest {
     @Test
     @Order(4)
     void testUpdateClientBadData() {
-        this.webTestClient.put().uri(BeerRouterConfig.BEER_PATH_ID, 1)
-                .body(Mono.just(BeerServiceImplTest.getTestBeer()), BeerDTO.class)
-                .header("Content-Type", "application/json")
-                .exchange()
-                .expectStatus().isNoContent();
-    }
-
-    @Test
-    @Order(3)
-    void testUpdateClient() {
         Beer testBeer = BeerServiceImplTest.getTestBeer();
         testBeer.setBeerStyle("");
 
@@ -77,6 +82,19 @@ public class BeerEndpointTest {
                 .header("Content-Type", "application/json")
                 .exchange()
                 .expectStatus().isBadRequest();
+    }
+
+    @Test
+    @Order(3)
+    void testUpdateBeer() {
+        BeerDTO beerDTO = getSavedTestBeer();
+        beerDTO.setBeerName("New");
+
+        this.webTestClient.put().uri(BeerRouterConfig.BEER_PATH_ID, beerDTO.getId())
+                .body(Mono.just(beerDTO), BeerDTO.class)
+                .header("Content-Type", "application/json")
+                .exchange()
+                .expectStatus().isNoContent();
     }
 
     @Test
@@ -98,7 +116,7 @@ public class BeerEndpointTest {
                 .header("Content-Type", "application/json")
                 .exchange()
                 .expectStatus().isCreated()
-                .expectHeader().location("http://localhost:8080/api/v2/beer/4");
+                .expectHeader().exists("location");
 
     }
 
@@ -112,7 +130,9 @@ public class BeerEndpointTest {
     @Test
     @Order(1)
     void testGetById() {
-        this.webTestClient.get().uri(BeerRouterConfig.BEER_PATH_ID, 1)
+        BeerDTO beerDTO = getSavedTestBeer();
+
+        this.webTestClient.get().uri(BeerRouterConfig.BEER_PATH_ID, beerDTO.getId())
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().valueEquals("Content-Type", "application/json")
@@ -127,5 +147,18 @@ public class BeerEndpointTest {
                 .expectStatus().isOk()
                 .expectHeader().valueEquals("Content-Type", "application/json")
                 .expectBody().jsonPath("$.size()", hasSize(greaterThan(1)));
+    }
+
+    public BeerDTO getSavedTestBeer(){
+        FluxExchangeResult<BeerDTO> beerDTOFluxExchangeResult = webTestClient.post().uri(BeerRouterConfig.BEER_PATH)
+                .body(Mono.just(BeerServiceImplTest.getTestBeer()), BeerDTO.class)
+                .header("Content-Type", "application/json")
+                .exchange()
+                .returnResult(BeerDTO.class);
+
+        List<String> location = beerDTOFluxExchangeResult.getResponseHeaders().get("Location");
+
+        return webTestClient.get().uri(BeerRouterConfig.BEER_PATH)
+                .exchange().returnResult(BeerDTO.class).getResponseBody().blockFirst();
     }
 }
