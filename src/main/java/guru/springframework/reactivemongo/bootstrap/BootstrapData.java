@@ -1,7 +1,9 @@
 package guru.springframework.reactivemongo.bootstrap;
 
 import guru.springframework.reactivemongo.domain.Beer;
+import guru.springframework.reactivemongo.domain.Customer;
 import guru.springframework.reactivemongo.repositories.BeerRepository;
+import guru.springframework.reactivemongo.repositories.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -13,13 +15,40 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class BootstrapData implements CommandLineRunner {
     private final BeerRepository beerRepository;
+    private final CustomerRepository customerRepository;
 
     @Override
     public void run(String... args) throws Exception {
+        this.customerRepository.deleteAll()
+                .doOnSuccess(success -> {
+                    loadCustomerData();
+                }).subscribe();
+
         this.beerRepository.deleteAll()
                 .doOnSuccess(success -> {
                     loadBeerData();
                 }).subscribe();
+    }
+
+    private void loadCustomerData() {
+        this.customerRepository.count().subscribe(count -> {
+            if (count == 0) {
+                customerRepository.save(Customer.builder()
+                                .customerName("Customer 1")
+                                .build())
+                        .subscribe();
+
+                customerRepository.save(Customer.builder()
+                                .customerName("Customer 2")
+                                .build())
+                        .subscribe();
+
+                customerRepository.save(Customer.builder()
+                                .customerName("Customer 3")
+                                .build())
+                        .subscribe();
+            }
+        });
     }
 
     private void loadBeerData() {

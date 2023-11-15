@@ -179,7 +179,7 @@ public class BeerEndpointTest {
 
         List<String> location = beerDTOFluxExchangeResult.getResponseHeaders().get("Location");
 
-        return webTestClient.get().uri(BeerRouterConfig.BEER_PATH)
+        return webTestClient.get().uri(location.get(0))
                 .exchange().returnResult(BeerDTO.class).getResponseBody().blockFirst();
     }
 }
